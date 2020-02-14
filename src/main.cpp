@@ -71,6 +71,7 @@ void handleRootFirstRun() {
 }
 
 int connectNetwork(const String& netSSID, const String& netPassword) {
+    // Connect to the specified network
     WiFi.begin(netSSID, netPassword);
     int connStatus = WiFi.waitForConnectResult();
 
@@ -78,6 +79,7 @@ int connectNetwork(const String& netSSID, const String& netPassword) {
 }
 
 void handleConnectNetwork() {
+    // Handle the form submission to connect to a network
     // The htmlPages in this function never display... Probably due to changing networks, can be tidied up
     if(server.method() != HTTP_POST) {
         server.send(405, "text/plain", "Method not allowed");
