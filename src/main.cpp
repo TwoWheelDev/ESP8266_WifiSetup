@@ -27,10 +27,13 @@ void handleRootFirstRun() {
     int numSsid = WiFi.scanNetworks();
     Serial.print(numSsid);
     Serial.println(" networks found");
-    String htmlPage = String("<!DOCTYPE HTML><html><body><h1>WiFi Networks</h1><p>WiFi Network:</p>");
+    String htmlPage = String("{");
     if (numSsid == 0) {
-        htmlPage += String("<h2>No Networks found</h2>");
+        htmlPage += String(R"("status" : "fail",)");
+        htmlPage += String(R"("data" : {"networks" : "No networks found"})");
     } else {
+        htmlPage += String(R"("status" : "success",)");
+        htmlPage += String(R"("data" : { "networks" : [)");
         /* -----------------------------------------------------------------------------
          * Sort networks by their RSSI strength
          * Source: https://github.com/tzapu/WiFiManager/blob/master/WiFiManager.cpp#L489
@@ -50,24 +53,31 @@ void handleRootFirstRun() {
             }
         }
 
-        htmlPage += String("<form action='/connectNetwork' method='post'>");
         for (int i = 0; i < numSsid; i++) {
             String currentSsid = WiFi.SSID(indices[i]);
             int currentRSSI = WiFi.RSSI(indices[i]);
-            String currentEnc = "";
-            if (WiFi.encryptionType(indices[i]) != ENC_TYPE_NONE) { currentEnc = "&#128274; "; }
+            boolean currentEnc = false;
+            if (WiFi.encryptionType(indices[i]) != ENC_TYPE_NONE) { currentEnc = true; }
 
-            htmlPage += String("<input type='radio' id='" + currentSsid + "' name='ssid' value='" + currentSsid + "'>");
-            htmlPage += String("<label for='" + currentSsid + "'>" + currentEnc +
-                    currentSsid + " (" + currentRSSI + "dBm)</label><br>");
+            htmlPage += String("{");
+            htmlPage += String("\"id\" : ");
+            htmlPage += String(indices[i]);
+            htmlPage += String(",\"name\" : \"" + currentSsid + "\",");
+            htmlPage += String("\"encryption\" : ");
+            htmlPage += String(currentEnc);
+            htmlPage += String(",\"strength\" : ");
+            htmlPage += String(currentRSSI);
+            htmlPage += String("}");
+
+            if (i < numSsid - 1) {
+                htmlPage += String(",");
+            } else {
+                htmlPage += String("]}");
+            }
         }
-        htmlPage += String("</select><br>");
-        htmlPage += String(
-                "<label for='password'>Password: </label><input id='password' name='password' type='password'>");
-        htmlPage += String("<input type='submit' value='Connect to Network'></form>");
     }
-    htmlPage += String("</body></html>");
-    server.send(200, "text/html", htmlPage);
+    htmlPage += String("}");
+    server.send(200, "application/json", htmlPage);
 }
 
 int connectNetwork(const String& netSSID, const String& netPassword) {
